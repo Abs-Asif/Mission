@@ -3,6 +3,7 @@ package night.mission.intimate
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -24,11 +25,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,18 +50,104 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    MissionApp(onExit = { finish() })
+                    var isAuthenticated by remember { mutableStateOf(false) }
+
+                    if (isAuthenticated) {
+                        MissionApp(onExit = { finish() })
+                    } else {
+                        PasswordScreen(
+                            onPasswordCorrect = { isAuthenticated = true }
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+object PasswordValidator {
+    const val REQUIRED_PASSWORD = "sex"
+
+    fun validate(input: String): Boolean {
+        return input == REQUIRED_PASSWORD
+    }
+}
+
+@Composable
+fun PasswordScreen(onPasswordCorrect: () -> Unit) {
+    var passwordInput by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+
+    val handleLogin = {
+        if (PasswordValidator.validate(passwordInput)) {
+            onPasswordCorrect()
+        } else {
+            showError = true
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Enter Password",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = passwordInput,
+            onValueChange = {
+                passwordInput = it
+                if (showError) showError = false
+            },
+            label = { Text("Password") },
+            singleLine = true,
+            isError = showError,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { handleLogin() }),
+            modifier = Modifier.fillMaxWidth(0.85f)
+        )
+
+        if (showError) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Incorrect password",
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 14.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = handleLogin,
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(text = "Unlock", fontSize = 18.sp)
         }
     }
 }
